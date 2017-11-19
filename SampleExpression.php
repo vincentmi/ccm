@@ -3,9 +3,9 @@ namespace CustomExpress;
 
 class SampleExpression extends \Expression
 {
-    public function calculate($context)
+    public function calculate($context,$level)
     {
-        if($context->get('base.rent.cac') == 1){
+        if($context->get('base.rent.cac',$level+1) == 1){
             return 1000;
         }else{
             return 200;

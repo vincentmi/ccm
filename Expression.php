@@ -26,12 +26,12 @@ class Expression
         return ['label'=>$this->getKey()];
     }
 
-    public function calculate($context)
+    public function calculate($context,$level)
     {
-        return eval('return ' . $this->parseExpression($context) . ';');
+        return eval('return ' . $this->parseExpression($context,$level) . ';');
     }
 
-    private function parseExpression($context)
+    private function parseExpression($context,$level)
     {
         $matches = [];
         $pattern = '/\\$([0-9a-zA-z_\\.]+)/';
@@ -46,7 +46,7 @@ class Expression
                 $replaceExpression[$matches[0][$i]] = $matches[1][$i];
             }
             foreach ($replaceExpression as $expressKey => $ex) {
-                $value = $context->get($ex);
+                $value = $context->get($ex,$level+1);
                 $label = $context->label($ex);
                 $replacePar[$expressKey] = $value;
                 $replaceParText[$expressKey] = $label;

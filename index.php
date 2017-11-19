@@ -22,14 +22,14 @@ $context->reg('cal.station_retail' ,
     pow(
         1+ $exp.station_retail_rate /100, 
         $cal.year_offset 
-    )  '
+    ) + $base.rent.area'
 ,'工位单位月租金');
 
 $context->set('cal.date','2017-02-01','计算日期');
 
-$context->reg('cal.year_offset',function($ctx){
-    $date = strtotime($ctx->get('base.biz.rent_start_date'));
-    $date2 = strtotime($ctx->get('cal.date'));
+$context->reg('cal.year_offset',function($ctx,$level){
+    $date = strtotime($ctx->get('base.biz.rent_start_date',$level+1));
+    $date2 = strtotime($ctx->get('cal.date',$level+1));
     return intval(date('Y',$date2) - date('Y',$date));
 });
 

@@ -19,6 +19,7 @@ class Context
     private $map = [];
 
     private $callstack = [];
+    private $callstackLevel = [];
 
     private $metas = [];
 
@@ -34,16 +35,21 @@ class Context
      * @return mixed|null
      * @throws Exception
      */
-    public function get($key)
+    public function get($key,$level)
     {
         if (in_array($key, $this->callstack)) {
-            $text = "循环依赖,[" . $key . "]依赖公式如下：\n";
+            array_push($this->callstack, $key);
+            array_push($this->callstackLevel,$level);
+
+            $text = "Cyclic dependence error occur in resolve '$key'. please check call stack below：\n";
             foreach ($this->callstack as $index => $item) {
-                $text .= "\t\t" . $item . "\n";
+                $text .= "|-".str_repeat('--',$this->callstackLevel[$index]) . $item ."\n";
             }
+            $text.="\n";
             throw new \Exception($text);
         }
         array_push($this->callstack, $key);
+        array_push($this->callstackLevel,$level);
 
         if (isset($this->fields[$key])) {
             return $this->fields[$key];
@@ -52,10 +58,10 @@ class Context
                 $dependStart = count($this->callstack);
                 $mapped = $this->map[$key];
                 if (is_object($mapped) && is_a($mapped, Expression::class)) {
-                    $value = $mapped->calculate($this);
+                    $value = $mapped->calculate($this,$level+1);
                 } else {
                     if (is_callable($mapped)) {
-                        $value = call_user_func_array($this->map[$key], [$this]);
+                        $value = call_user_func_array($this->map[$key], [$this ,$level+1]);
                     } else {
                         throw new \Exception('invalid key map' . var_export($mapped, true));
                     }
@@ -185,7 +191,7 @@ class Context
     public function fetch($key)
     {
         $this->callstack = [];
-        return $this->get($key);
+        return $this->get($key,0);
     }
 
     public function fetchs($keys)
