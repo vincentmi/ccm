@@ -57,13 +57,7 @@ $ctx->reg('temperature_rate' ,function($context,$level){
         return 0;
     }
 })
-    ->reg('price' , function($context , $level){
-        $temperature_rate = $context->get('temperature_rate',$level+1);
-        $workload_rate = $context->get('workload_rate',$level+1);
-        $org_price = 3;
-
-        return $org_price * (1 + $temperature_rate + $workload_rate);
-    })
+    ->reg('price' , '$org_price * (1 + $temperature_rate + $workload_rate)')
 ;
 
 
