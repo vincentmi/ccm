@@ -17,6 +17,7 @@ blog: http://vnzmi.com
 但是只有需要时才会运行相关的公式。
 - 如果某一运算涉及的公式非常多 ```rset()```因为会检查变量的依赖会导致进行依赖检查耗费太多时间，建议
 使用```reset()```重置后再进行运算。
+- **特别注意,字符串形式的公式表达式和变量之间必须要有空格,例如: ```$a+$b``` 需要些成 ```$a + $b```**
 
 ## 使用
 
@@ -24,6 +25,14 @@ blog: http://vnzmi.com
 
 ```json
 composer require vincentmi/ccm
+
+//或者
+手动修改项目的 composer.json文件
+
+"require": {
+    	"vincentmi/ccm": "1.*"
+}
+
 ```
 更新依赖包
 
@@ -34,10 +43,12 @@ composer update
 测试代码
 
 ```php
+<?php
+require  'vendor/autoload.php';
 use CCM\Context;
 
-echo new Context()->set('a',1)->set('b',1)->reg('c','$a+$b')->fetch('c');
-
+$ctx =  new Context();
+echo $ctx->set('a',1)->set('b',1)->reg('c','$a + $b')->fetch('c');
 
 ```
 
