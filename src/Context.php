@@ -91,6 +91,7 @@ class Context
                 return $value;
 
             } else {
+                print_r($this);
                 throw new \Exception('variable\''.$key.'\' missed ');
                 //return null;
             }
@@ -155,7 +156,34 @@ class Context
     }
 
     /**
-     * 重置context
+     * 删除域内的变量
+     * @param $domain
+     */
+    public function remove($domain){
+        $domainLength = count($domain);
+        foreach ($this->fields as $k => $v) {
+                if (substr($k, 0, $domainLength) == $domain) {
+                    unset($this->fields[$k]);
+                }
+        }
+        return $this;
+    }
+
+    /**
+     * 删除域内注册的公式
+     * @param $domain
+     */
+    public function unreg($domain){
+        $domainLength = count($domain);
+        foreach ($this->map as $k => $v) {
+                if (substr($k, 0, $domainLength) == $domain) {
+                    unset($this->map[$k]);
+                }
+        }
+    }
+
+    /**
+     * 重置context以及置顶前缀的运算结果
      * @param bool $deep
      * @return array
      */
@@ -242,6 +270,11 @@ class Context
         return $this->get($key,0);
     }
 
+    /**
+     * 读取多个属性以及部分meta
+     * @param $keys
+     * @return array
+     */
     public function fetchs($keys)
     {
         if(!is_array($keys)){
@@ -282,10 +315,18 @@ class Context
         if (isset($this->map[$key])) {
             throw new \Exception('注册的key已经存在');
         }
+
         if (is_string($expression)) {
             $expression = new Expression($expression);
+            $this->map[$key] = $expression;
+        }else if(is_object($expression) && is_a($expression , ExpressionInterface::class)){
+            $this->map[$key] = $expression;
+        }else if(is_callable($expression)) {
+            $this->map[$key] = $expression;
+        }else{
+            throw new \Exception('Invalid expression for \''.$key.'\'');
         }
-        $this->map[$key] = $expression;
+
         $this->setMeta($key,$meta);
         return $this;
     }
@@ -300,6 +341,11 @@ class Context
         }
     }
 
+    /**
+     * 注册一个class , key和 meta都从类中读取
+     * @param $class
+     * @return $this
+     */
     public function regClass($class)
     {
         $class = new $class;
