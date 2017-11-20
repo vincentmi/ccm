@@ -1,0 +1,21 @@
+{
+  "name": "vincentmi/ccm",
+  "description": "A simple  common calculation model",
+  "type": "project",
+  "license": "MIT",
+  "minimum-stability": "stable",
+  "authors": [
+    {
+      "name": "Vincent Mi",
+      "email": "miwenshu@gmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=5.5.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "CCM\\": "src/"
+    }
+  }
+}

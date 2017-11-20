@@ -1,11 +1,11 @@
 <?php
-
+namespace  CCM;
 /**
  * Calculation Context
  * result cache and provide a depends check
  * with lazy-load support
  *
- * @author mi.wenshu@mydreamplus.com
+ * @author miwenshu@gmail.com
  */
 class Context
 {
@@ -23,6 +23,8 @@ class Context
 
     private $metas = [];
 
+    private $interceptors = [];
+
     private $depends = [];
 
     public $rsetCount = 0;
@@ -37,6 +39,14 @@ class Context
      */
     public function get($key,$level)
     {
+        //interceptor
+        $keys = explode('.',$key);
+        foreach($this->interceptors as $interceptor){
+            if($interceptor->match($this,$keys)){
+                $interceptor->perform($this,$keys,$key);
+            }
+        }
+        //callstack check
         if (in_array($key, $this->callstack)) {
             array_push($this->callstack, $key);
             array_push($this->callstackLevel,$level);
@@ -57,7 +67,7 @@ class Context
             if (isset($this->map[$key])) {
                 $dependStart = count($this->callstack);
                 $mapped = $this->map[$key];
-                if (is_object($mapped) && is_a($mapped, Expression::class)) {
+                if (is_object($mapped) && is_a($mapped, ExpressionInterface::class)) {
                     $value = $mapped->calculate($this,$level+1);
                 } else {
                     if (is_callable($mapped)) {
@@ -80,8 +90,29 @@ class Context
                 return $value;
 
             } else {
-                return null;
+                throw new \Exception('variable\''.$key.'\' missed ');
+                //return null;
             }
+        }
+    }
+
+    public function addInterceptor($interceptor){
+        if(is_a($interceptor) == InterceptorInterface::class){
+            $this->interceptors[] = $interceptor;
+        }
+    }
+
+    public function printCallstack($return=false){
+        $text = '';
+        foreach ($this->callstack as $index => $item) {
+            $text .= "|-".str_repeat('--',$this->callstackLevel[$index]) . $item ."\n";
+        }
+        $text.="\n";
+
+        if($return == true){
+            return $text;
+        }else{
+            echo $text;
         }
     }
 
@@ -256,6 +287,7 @@ class Context
     {
         $class = new $class;
         $this->reg($class->getKey(), $class , $class->getMeta());
+        return $this;
     }
 
     /**

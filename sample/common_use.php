@@ -1,7 +1,9 @@
 <?php
-include 'Context.php';
-include 'Expression.php';
-include 'SampleExpression.php';
+require __DIR__."/../vendor/autoload.php";
+
+require 'SampleExpression.php';
+
+use CCM\Context;
 
 $context = new Context();
 
@@ -22,8 +24,8 @@ $context->reg('cal.station_retail' ,
     pow(
         1+ $exp.station_retail_rate /100, 
         $cal.year_offset 
-    ) + $base.rent.area'
-,'工位单位月租金');
+    )'
+    ,'工位单位月租金');
 
 $context->set('cal.date','2017-02-01','计算日期');
 
@@ -36,8 +38,6 @@ $context->reg('cal.year_offset',function($ctx,$level){
 $context->reg('cal.year_rent_amount',' $base.rent.area * 12 * $cal.station_retail ',
     ' 年度工位收入');
 
-$context->reg('cal.year_rent_amount2',' $base.rent.area * 12 * $cal.station_retail +1000 ',
-    ' 年度工位收入2');
 
 
 //$expression = ' ${base.rent.area} * 12 * ${cal.station_retail} ';
@@ -50,15 +50,9 @@ for($i = 2016 ;$i<=2025;$i++){
         .' '.$context->label('cal.station_retail').'='.$context->fetch('cal.station_retail')
         ." +++ ";
     echo $context->fetch('cal.year_rent_amount2')
-    .' '.$context->label('cal.station_retail').'='.$context->fetch('cal.station_retail')
-    ."\n";
+        .' '.$context->label('cal.station_retail').'='.$context->fetch('cal.station_retail')
+        ."\n";
 
 }
 
 echo (json_encode($context->fetchs('cal.sample'),JSON_UNESCAPED_UNICODE));
-
-echo "\n";
-
-print_r($context->getMap('cal.year_rent_amount'));
-
-echo "\n";

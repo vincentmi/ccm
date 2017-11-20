@@ -1,11 +1,11 @@
 <?php
-
+namespace  CCM;
 /**
  * expression parse
  *
  * Class Expression
  */
-class Expression
+class Expression implements ExpressionInterface
 {
 
     private $original = null;

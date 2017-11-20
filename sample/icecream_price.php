@@ -1,14 +1,3 @@
-# ccm
-Common Calculation Model  . 
-
-## 简介
-用于一堆数学模型运算结果
-
-## 使用
-
-> 根据天气和工作量调整冰淇淋价格
-
-```
 <?php
 require __DIR__."/../vendor/autoload.php";
 use CCM\Context;
@@ -51,5 +40,3 @@ if(isset($argv[1]) ){
 }
 echo $ctx->set('totalCheckin',5)
     ->fetch('price')."\n";
-
-```
