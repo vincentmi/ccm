@@ -19,12 +19,11 @@ $context
     ->reg('cal.c','$base.a + $base.b')
     ->regClass(\CustomExpress\SampleExpression::class)
     ->reg('cal.d',function ($context,$level){
-        $m = $context->get('base.m',$level+1);
-        $a = $context->get('rate',$level+1);
-        if($m > 100){
-            return $a * 0.5;
+        extract($context->gets('base.m,rate',$level+1 , true));
+        if($base_m > 100){
+            return $rate * 0.5;
         }else{
-            return $a +10;
+            return $rate +10;
         }
     });
 

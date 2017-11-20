@@ -39,6 +39,7 @@ class Context
      */
     public function get($key,$level)
     {
+        $key = trim($key);
         //interceptor
         $keys = explode('.',$key);
         foreach($this->interceptors as $interceptor){
@@ -94,6 +95,22 @@ class Context
                 //return null;
             }
         }
+    }
+
+    public function gets($keys , $level , $replaceDot=false){
+        if(!is_array($keys)){
+            $keys = explode(',',$keys);
+        }
+        $data = [];
+        foreach($keys as $key){
+            if($replaceDot){
+                $k = str_replace('.','_',$key);
+            }else{
+                $k = $key;
+            }
+            $data[$k] = $this->get($key , $level);
+        }
+        return $data;
     }
 
     public function addInterceptor($interceptor){
