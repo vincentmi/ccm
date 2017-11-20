@@ -23,19 +23,7 @@ blog: http://vnzmi.com
 修改```composer.json```
 
 ```json
-{
-    "name": "vincentmi/t1",
-    "authors": [
-        {
-            "name": "Vincent Mi",
-            "email": "miwenshu@gmail.com"
-        }
-    ],
-    "require": {
-    	"vincentmi/ccm": "1.*"
-    }
-}
-
+composer require vincentmi/ccm
 ```
 更新依赖包
 
