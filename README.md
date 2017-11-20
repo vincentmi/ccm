@@ -8,11 +8,20 @@ miwenshu@gmail.com
 
 http://vnzmi.com
 
+## Sample
+
+```php
+cd sample
+php common_use.php
+php index.php 
+php depency_error.php //依赖错误检测
+```
+
 ## 使用
 
 > 根据天气和工作量调整冰淇淋价格
 
-```
+```php
 <?php
 require __DIR__."/../vendor/autoload.php";
 use CCM\Context;
