@@ -2,11 +2,12 @@
 Common Calculation Model  . 
 
 ## 简介
-用于一堆数学模型运算结果
+工作遇到的情况，需要根据一堆数学模型运算产生结果。作为投资的参考。
+写了个简单的框架进行管理。
 
-miwenshu@gmail.com
+author: miwenshu@gmail.com
 
-http://vnzmi.com
+blog: http://vnzmi.com
 
 ## 特性
 
@@ -17,7 +18,7 @@ http://vnzmi.com
 - 如果某一运算涉及的公式非常多 ```rset()```因为会检查变量的依赖会导致进行依赖检查耗费太多时间，建议
 使用```reset()```重置后再进行运算。
 
-## Sample
+## 示例代码
 
 ```php
 cd sample
