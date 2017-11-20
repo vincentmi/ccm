@@ -30,6 +30,7 @@ php depency_error.php //依赖错误检测
 ## 使用
 
 > 根据天气和工作量调整冰淇淋价格
+> 当当天安排给打卡同事的任务不饱和时以及气温比较高的时候调高冰淇淋的售价
 
 ```php
 <?php
@@ -37,9 +38,10 @@ require __DIR__."/../vendor/autoload.php";
 use CCM\Context;
 $ctx = new \CCM\Context();
 
+echo 
 $ctx->reg('temperature_rate' ,function($context,$level){
 
-    $todayTemp = 35 ; // $todayTemp = fget('http://cnweathor.com/getToday')
+    $todayTemp = $context->get('todayTemp' , $level+1) ; // $todayTemp = fget('http://cnweathor.com/getToday')
     if($todayTemp > 30){
         return 0.2;
     }else if($todayTemp > 40){
@@ -52,21 +54,18 @@ $ctx->reg('temperature_rate' ,function($context,$level){
     $workload = $context->get('workload',$level+1);
     $totalCheckin = $context->get('totalCheckin',$level+1);
     if($workload/$totalCheckin < 1){
-        return 0.2;
+        return 0.3;
     }else{
-        return 0;
+        return -0.2;
     }
 })
     ->reg('price' , '$org_price * (1 + $temperature_rate + $workload_rate)')
-    ->set('org_price',3);
+    ->set('org_price',3)
+    ->set('totalCheckin',5)
+    ->set('workload',isset($argv[1])? float($argv[1]):5)
+    ->set('todayTemp',isset($argv[2])? float($argv[2]):25)
+    ->fetch('price');
 
-
-if(isset($argv[1]) ){
-    $ctx->set('workload',$argv[1]);
-}else{
-    $ctx->set('workload',5);
-}
-echo $ctx->set('totalCheckin',5)
-    ->fetch('price')."\n";
+echo "\n";
 
 ```
