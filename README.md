@@ -58,7 +58,7 @@ $ctx->reg('temperature_rate' ,function($context,$level){
     }
 })
     ->reg('price' , '$org_price * (1 + $temperature_rate + $workload_rate)')
-;
+    ->set('org_price',3);
 
 
 if(isset($argv[1]) ){
