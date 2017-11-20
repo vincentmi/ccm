@@ -18,6 +18,42 @@ blog: http://vnzmi.com
 - 如果某一运算涉及的公式非常多 ```rset()```因为会检查变量的依赖会导致进行依赖检查耗费太多时间，建议
 使用```reset()```重置后再进行运算。
 
+## 使用
+
+修改```composer.json```
+
+```json
+{
+    "name": "vincentmi/t1",
+    "authors": [
+        {
+            "name": "Vincent Mi",
+            "email": "miwenshu@gmail.com"
+        }
+    ],
+    "require": {
+    	"vincentmi/ccm": "1.*"
+    }
+}
+
+```
+更新依赖包
+
+```sh
+composer update
+```
+
+测试代码
+
+```php
+use CCM\Context;
+
+echo new Context()->set('a',1)->set('b',1)->reg('c','$a+$b')->fetch('c');
+
+
+```
+
+
 ## 示例代码
 
 ```php
