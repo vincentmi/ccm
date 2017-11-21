@@ -95,6 +95,8 @@ class Context
         }
 
         if (isset($this->fields[$key])){
+            //依赖常量 将该Key记录为上一层的依赖
+            //不添加到调用栈 避免循环检查
             $callStackLen = count($this->callstack);
             if($callStackLen > 0) {
                 $pKey = $this->callstack[$callStackLen-1];
@@ -104,16 +106,16 @@ class Context
         }
 
 
-        //callstack check
         if (in_array($key, $this->callstack)) {
+            //循环依赖检查
             array_push($this->callstack, $key);
             array_push($this->callstackLevel, $level);
-
             $text = "Cyclic dependence error occur in resolve '$key'. please check call stack below：\n";
             $text .= $this->printCallstack(true);
             $text .= "\n";
             throw new CyclicDependenceException($text);
         }
+        //调用栈PUSH
         array_push($this->callstack, $key);
         array_push($this->callstackLevel, $level);
 
@@ -129,14 +131,14 @@ class Context
                     throw new InvalidException('invalid key map' . var_export($mapped, true));
                 }
             }
-            $keyDepend = array_slice($this->callstack, $dependStart);
+            $subCalls = array_slice($this->callstack, $dependStart); //当前节点依赖的所有底层调用
 
-            foreach ($keyDepend as $dependKey) {
-                if (!isset($this->depends[$dependKey])) {
-                    $this->depends[$dependKey] = [];
+            foreach ($subCalls as $calledKey) {
+                if (!isset($this->depends[$calledKey])) {
+                    $this->depends[$calledKey] = [$key];
+                }else{
+                    $this->depends[$calledKey][$key] = $key;
                 }
-                $this->depends[$dependKey][$key] = $key;
-
             }
 
             $this->set($key, $value);
