@@ -2,6 +2,8 @@
 require __DIR__."/../vendor/autoload.php";
 
 require 'SampleExpression.php';
+date_default_timezone_set('Asia/Shanghai');
+
 
 use CCM\Context;
 
@@ -37,6 +39,7 @@ $context->reg('cal.year_offset',function($ctx,$level){
 
 $context->reg('cal.year_rent_amount',' $base.rent.area * 12 * $cal.station_retail ',
     ' 年度工位收入');
+$context->set('base.a',1);
 
 
 
@@ -49,9 +52,7 @@ for($i = 2016 ;$i<=2025;$i++){
         $context->fetch('cal.year_rent_amount')
         .' '.$context->label('cal.station_retail').'='.$context->fetch('cal.station_retail')
         ." +++ ";
-    echo $context->fetch('cal.year_rent_amount2')
-        .' '.$context->label('cal.station_retail').'='.$context->fetch('cal.station_retail')
-        ."\n";
+
 
 }
 

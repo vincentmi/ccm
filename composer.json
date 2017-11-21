@@ -1,13 +1,16 @@
 {
   "name": "vincentmi/ccm",
   "description": "A simple  common calculation model",
-  "type": "project",
+  "type": "library",
   "license": "MIT",
+  "homepage": "https://vnzmi.com/ccm",
   "minimum-stability": "stable",
   "authors": [
     {
       "name": "Vincent Mi",
-      "email": "miwenshu@gmail.com"
+      "email": "miwenshu@gmail.com",
+      "homepage": "http://vnzmi.com",
+            "role": "Owner"
     }
   ],
   "require": {
