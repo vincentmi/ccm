@@ -1,16 +1,15 @@
 <?php
 /**
- * use for laravel
+ * use for Laravel
  */
-namespace CCM;
+namespace CCM\Laravel;
 
-use Illuminate\Support\Facades\Facade;
+use Illuminate\Support\Facades\Facade AS LaravelFacade;
 
 /**
- * @see \Illuminate\Database\DatabaseManager
- * @see \Illuminate\Database\Connection
+ * @see CCM\Context
  */
-class CCM extends Facade
+class CCM extends LaravelFacade
 {
     /**
      * Get the registered name of the component.

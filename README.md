@@ -52,6 +52,20 @@ echo $ctx->set('a',1)->set('b',1)->reg('c','$a + $b')->fetch('c');
 
 ```
 
+## 集成到laravel
+
+添加provider ```\CCM\Laravel\ServiceProvider::class,``` 到 ```configs/app.php```
+,添加 alias ```'CCM'=>\CCM\Laravel\CCM::class```.
+
+使用 
+
+```
+CCM::set('a',1);
+CCM::reg('b','$a + 10');
+
+echo CCM::fetch('b');
+```
+
 
 ## 示例代码
 
