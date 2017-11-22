@@ -211,7 +211,7 @@ class Context
                 return $this;
             }
         }
-        if (is_a($interceptor) == InterceptorInterface::class) {
+        if (is_a($interceptor,InterceptorInterface::class)) {
             $this->interceptors[] = $interceptor;
         }
         return $this;
