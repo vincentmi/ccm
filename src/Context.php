@@ -49,7 +49,6 @@ class Context
     public $prefixLength = 4;
     public $rsetCount = 0;
     private $fields = [];
-    private $cache = [];
     private $map = [];
     private $callstack = [];
     private $callstackLevel = [];
@@ -347,7 +346,7 @@ class Context
             $data[$key] = [
                 'label' => $this->label($key),
                 'value' => $this->fetch($key),
-                'tips' => $this->tips($key)
+                'meta' => $this->meta($key)
             ];
         }
         return $data;
@@ -383,12 +382,12 @@ class Context
      * @param $key
      * @return mixed
      */
-    public function tips($key)
+    public function meta($key)
     {
         if (isset($this->metas[$key])) {
-            return isset($this->metas[$key]['tips']) ? $this->metas[$key]['tips'] : '';
+            return $this->metas[$key];
         } else {
-            return '';
+            return [];
         }
     }
 
