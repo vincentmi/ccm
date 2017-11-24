@@ -359,6 +359,7 @@ class Context
      */
     public function label($key)
     {
+        $key = trim($key);
         if (isset($this->metas[$key])) {
             return isset($this->metas[$key]['label']) ? $this->metas[$key]['label'] : $key;
         } else {
@@ -384,6 +385,7 @@ class Context
      */
     public function meta($key)
     {
+        $key = trim($key);
         if (isset($this->metas[$key])) {
             return $this->metas[$key];
         } else {
