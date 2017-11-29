@@ -48,13 +48,27 @@ class Context
 
     public $prefixLength = 4;
     public $rsetCount = 0;
-    private $fields = [];
-    private $map = [];
-    private $callstack = [];
-    private $callstackLevel = [];
-    private $metas = [];
-    private $interceptors = [];
-    private $depends = [];
+    protected $fields = [];
+    protected $map = [];
+    protected $callstack = [];
+    protected $callstackLevel = [];
+    protected $metas = [];
+    protected $interceptors = [];
+    protected $depends = [];
+
+    protected $_old_error_handler = null;
+
+    /**
+     * debug模式会拦截一些错误 比如 除数为0
+     * @var bool
+     */
+    protected $_debug = false;
+
+
+    public function debug($debug = true){
+        $this->_debug = $debug;
+        return $this;
+    }
 
     public function gets($keys, $level, $replaceDot = false)
     {
@@ -374,8 +388,27 @@ class Context
      */
     public function fetch($key)
     {
-        $this->callstack = [];
-        return $this->get($key, 0);
+        try{
+            $oldErrorHandler = null;
+            if($this->_debug == false){
+                $oldErrorHandler = set_error_handler(function($severity, $message, $file, $line){
+                    throw new \ErrorException($message, 0, $severity, $file, $line);
+                });
+            }
+
+            $this->callstack = [];
+            $result= $this->get($key, 0);
+            if($oldErrorHandler){
+                set_error_handler($oldErrorHandler);
+            }
+            return $result;
+        }catch(\Exception $e){
+            if($this->_debug == false){
+                return 0;
+            }else{
+                throw $e;
+            }
+        }
     }
 
     /**

@@ -34,5 +34,9 @@ $context->printCallstack();
 echo 'cal.c='.$context->fetch('cal.sample')."\n";
 $context->printCallstack();
 
+$context->debug(true);
+$context->reg('mm','5/0');
+echo $context->fetch('mm');
+
 
 

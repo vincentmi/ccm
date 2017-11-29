@@ -122,4 +122,21 @@ class MainTest extends TestCase
         $this->assertEquals(32, $this->ctx->fetch('f'));
         $this->assertEquals(15, $this->ctx->fetch('aa'));
     }
+
+    public function testZeroDivisionDebugOff(){
+
+        $this->ctx->reg('f1','5/0');
+        $this->ctx->debug(false);
+        $this->assertEquals(0 ,$this->ctx->fetch('f1'));
+    }
+
+    /**
+     * @expectedException \ErrorException
+     * @expectedExceptionMessage Division by zero
+     */
+    public function testZeroDivisionDebugOn(){
+        $this->ctx->reg('f1','5/0');
+        $this->ctx->debug(true);
+        $this->ctx->fetch('f1');
+    }
 }
