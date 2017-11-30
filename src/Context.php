@@ -135,14 +135,36 @@ class Context
         if (isset($this->map[$key])) {
             $dependStart = count($this->callstack);
             $mapped = $this->map[$key];
-            if (is_object($mapped) && is_a($mapped, ExpressionInterface::class)) {
-                $value = $mapped->calculate($this, $level + 1);
-            } else {
-                if (is_callable($mapped)) {
-                    $value = call_user_func_array($this->map[$key], [$this, $level + 1]);
-                } else {
-                    throw new InvalidException('invalid key map' . var_export($mapped, true));
+
+            try {
+
+                $oldErrorHandler = null;
+                if($this->_debug == false){
+                    $oldErrorHandler = set_error_handler(function($severity, $message, $file, $line){
+                        throw new \ErrorException($message, 0, $severity, $file, $line);
+                    });
                 }
+
+                if (is_object($mapped) && is_a($mapped, ExpressionInterface::class)) {
+                    $value = $mapped->calculate($this, $level + 1);
+                } else {
+                    if (is_callable($mapped)) {
+                        $value = call_user_func_array($this->map[$key], [$this, $level + 1]);
+                    } else {
+                        throw new InvalidException('invalid key map' . var_export($mapped, true));
+                    }
+                }
+                if($oldErrorHandler){
+                    set_error_handler($oldErrorHandler);
+                }
+
+            }catch(\Exception $e){
+                if($this->_debug == false){
+                    return 0;
+                }else{
+                    throw $e;
+                }
+
             }
             $subCalls = array_slice($this->callstack, $dependStart); //当前节点依赖的所有底层调用
 
@@ -388,27 +410,46 @@ class Context
      */
     public function fetch($key)
     {
-        try{
-            $oldErrorHandler = null;
-            if($this->_debug == false){
-                $oldErrorHandler = set_error_handler(function($severity, $message, $file, $line){
-                    throw new \ErrorException($message, 0, $severity, $file, $line);
-                });
-            }
+        $this->callstack = [];
+        $result= $this->get($key, 0);
+        return $result;
+    }
 
-            $this->callstack = [];
-            $result= $this->get($key, 0);
-            if($oldErrorHandler){
-                set_error_handler($oldErrorHandler);
-            }
-            return $result;
-        }catch(\Exception $e){
-            if($this->_debug == false){
-                return 0;
-            }else{
-                throw $e;
+    /**
+     * 获取一组数据
+     * @param $prefix
+     * @return array
+     */
+    public function fetchAll($prefix){
+        $len = strlen($prefix);
+
+        $data =[];
+        $fetched = [];
+
+        foreach($this->fields as $key=>$value){
+            if(strpos($key , $prefix) === 0){
+                $fetched[$key] = 1;
+                $subKey = substr($key,$len+1);
+                if($subKey!='') {
+                    $data[$subKey] = $value;
+                }
             }
         }
+
+        foreach($this->map as $key=>$value){
+            if(isset($fetched[$key])){
+                continue;
+            }
+            if(strpos($key , $prefix) === 0){
+                //$fetched[$key] = 1;
+                $subKey = substr($key,$len+1);
+                if($subKey!=''){
+                    $data[$subKey] = $this->fetch($key);
+                }
+
+            }
+        }
+        return $data;
     }
 
     /**

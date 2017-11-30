@@ -139,4 +139,13 @@ class MainTest extends TestCase
         $this->ctx->debug(true);
         $this->ctx->fetch('f1');
     }
+
+    public function testFetchAll(){
+        $this->ctx->set('a.a',1);
+        $this->ctx->reg('a.b','$a.a + 5');
+        $this->ctx->reg('a.c.d','$a.a + 15');
+        $this->assertEquals(['a'=>1,'b'=>'6','c.d'=>16] , $this->ctx->fetchAll('a'));
+        $this->assertEquals(['d'=>16] , $this->ctx->fetchAll('a.c'));
+
+    }
 }
