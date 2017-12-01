@@ -148,4 +148,28 @@ class MainTest extends TestCase
         $this->assertEquals(['d'=>16] , $this->ctx->fetchAll('a.c'));
 
     }
+
+
+    public function testPrintCall(){
+        $this->ctx->debug(true);
+        $this->assertEquals([] , $this->ctx->getCalls('e'));
+        $e1 = $this->ctx->fetch('e');
+
+        $this->assertEquals(
+            [
+                [ 'key'=>'e','level'=>0,'data'=>2] ,
+                [ 'key'=>'a','level'=>1,'data'=>1],
+                [ 'key'=>'b','level'=>1,'data'=>2]],$this->ctx->getCalls('e'));
+
+        //$this->ctx->printCalls('e');
+
+        $this->ctx->rset('a',2);
+        $e2 = $this->ctx->fetch('e');
+        $this->assertEquals(2,$e1);
+        $this->assertEquals(4,$e2);
+        //$this->ctx->printCalls('e');
+
+        $this->getActualOutput();
+
+    }
 }

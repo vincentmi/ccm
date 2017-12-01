@@ -50,13 +50,20 @@ class Context
     public $rsetCount = 0;
     protected $fields = [];
     protected $map = [];
+    //调用栈用于进行关联关系和循环调用检查
     protected $callstack = [];
     protected $callstackLevel = [];
+    //用于调试的调用
+    protected $_callstack = [];
+    protected $_callstackLevel = [];
+    /**
+     * debug时的全部callstacks
+     * @var array
+     */
+    protected $_calls = [];
     protected $metas = [];
     protected $interceptors = [];
     protected $depends = [];
-
-    protected $_old_error_handler = null;
 
     /**
      * debug模式会拦截一些错误 比如 除数为0
@@ -115,6 +122,11 @@ class Context
                 $pKey = $this->callstack[$callStackLen-1];
                 $this->depends[$key][$pKey] = $pKey;
             }
+            if($this->_debug && $callStackLen > 0){
+                array_push($this->_callstack, $key);
+                array_push($this->_callstackLevel, $level-1);
+            }
+
             return $this->fields[$key];
         }
 
@@ -123,6 +135,7 @@ class Context
             //循环依赖检查
             array_push($this->callstack, $key);
             array_push($this->callstackLevel, $level);
+
             $text = "Cyclic dependence error occur in resolve '$key'. please check call stack below：\n";
             $text .= $this->printCallstack(true);
             $text .= "\n";
@@ -131,6 +144,10 @@ class Context
         //调用栈PUSH
         array_push($this->callstack, $key);
         array_push($this->callstackLevel, $level);
+        if($this->_debug){
+            array_push($this->_callstack, $key);
+            array_push($this->_callstackLevel, $level);
+        }
 
         if (isset($this->map[$key])) {
             $dependStart = count($this->callstack);
@@ -359,6 +376,9 @@ class Context
         if (isset($this->depends[$key])) {
             foreach ($this->depends[$key] as $child) {
                 unset($this->fields[$child]);
+                if($this->_debug){
+                    unset($this->_calls[$child]);
+                }
                 $this->rsetCount++;
                 //echo 'unset '.$child."\n";
                 $this->clearDepends($child);
@@ -411,8 +431,60 @@ class Context
     public function fetch($key)
     {
         $this->callstack = [];
+        $this->callstackLevel =[];
+        $this->_callstack = [];
+        $this->_callstackLevel = [];
+
         $result= $this->get($key, 0);
+        if($this->_debug){
+            $callStack = $this->_callstack;
+            $callStackLevel = $this->_callstackLevel;
+            if(!isset($this->_calls[$key])){
+                $calls = [];
+                foreach($callStack as $index=>$call){
+                    $calls[] = [
+                        'key'=>$call ,
+                        'level'=>$callStackLevel[$index],
+                        'data'=>$this->fetch($call)
+                    ];
+                }
+                $this->_calls[$key] =$calls;
+            }
+        }
         return $result;
+    }
+
+    public function getCalls($key = null)
+    {
+        if($this->_debug){
+            if($key == null){
+                return $this->_calls;
+            }elseif(isset($this->_calls[$key])){
+                return $this->_calls[$key];
+            }else{
+                return [];
+            }
+        }else{
+            return [];
+        }
+    }
+
+    public function printCalls($key = null,$return = false){
+        $calls = $this->getCalls($key);
+        $text = "\n";
+        foreach($calls as $call){
+            if(is_array($call['data']) || is_object($call['data'])){
+                $data = json_encode($call['data'],JSON_UNESCAPED_UNICODE);
+            }else{
+                $data = $call['data'];
+            }
+            $text .= "|-" . str_repeat('--', $call['level']) . $call['key'] .'='.$data. "\n";
+        }
+        if($return){
+            return $text;
+        }else{
+            echo $text;
+        }
     }
 
     /**
