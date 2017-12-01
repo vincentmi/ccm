@@ -126,7 +126,6 @@ class Context
                 array_push($this->_callstack, $key);
                 array_push($this->_callstackLevel, $level-1);
             }
-
             return $this->fields[$key];
         }
 
@@ -135,6 +134,11 @@ class Context
             //循环依赖检查
             array_push($this->callstack, $key);
             array_push($this->callstackLevel, $level);
+
+            if($this->_debug ){
+                array_push($this->_callstack, $key);
+                array_push($this->_callstackLevel, $level);
+            }
 
             $text = "Cyclic dependence error occur in resolve '$key'. please check call stack below：\n";
             $text .= $this->printCallstack(true);
@@ -185,13 +189,14 @@ class Context
             }
             $subCalls = array_slice($this->callstack, $dependStart); //当前节点依赖的所有底层调用
 
-            foreach ($subCalls as $calledKey) {
+            /*foreach ($subCalls as $calledKey) {
                 if (!isset($this->depends[$calledKey])) {
                     $this->depends[$calledKey] = [$key];
                 }else{
                     $this->depends[$calledKey][$key] = $key;
                 }
-            }
+            }*/
+            $this->addDepends($key,$subCalls);
 
             $this->set($key, $value);
             return $value;
@@ -201,6 +206,27 @@ class Context
             throw new VariableMissingException('variable\'' . $key . '\' missed ');
             //return null;
         }
+    }
+
+    /**
+     * 设置 $key 依赖的 底层key,
+     * 使用Interceptor进行载入时 需要 在载入后 手动维护依赖关系
+     * @param $key
+     * @param $subCalls
+     * @return $this
+     */
+    public function addDepends($key , $subCalls){
+        if(!is_array($subCalls)){
+            $subCalls = [$subCalls];
+        }
+        foreach($subCalls as $calledKey){
+            if (!isset($this->depends[$calledKey])) {
+                $this->depends[$calledKey] = [$key];
+            }else{
+                $this->depends[$calledKey][$key] = $key;
+            }
+        }
+        return $this;
     }
 
     public function printCallstack($return = false)
@@ -239,6 +265,7 @@ class Context
         $this->setMeta($key, $meta);
         return $this;
     }
+
 
     private function setMeta($key, $meta)
     {
@@ -478,7 +505,8 @@ class Context
             }else{
                 $data = $call['data'];
             }
-            $text .= "|-" . str_repeat('--', $call['level']) . $call['key'] .'='.$data. "\n";
+            $repeatStr = $call['level'] > 0 ? str_repeat('--', $call['level']) : '';
+                $text .= "|-" . $repeatStr . $call['key'] .'='.$data. "\n";
         }
         if($return){
             return $text;

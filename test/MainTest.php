@@ -4,8 +4,32 @@ namespace Test;
 
 use CCM\Context;
 use CCM\CyclicDependenceException;
+use CCM\InterceptorInterface;
 use CCM\VariableMissingException;
 use PHPUnit\Framework\TestCase;
+
+class InteceptorDepends implements InterceptorInterface{
+    public function match($context, $keys)
+    {
+        if($keys[0] == 'int'){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public function perform($context, $keys, $key)
+    {
+        $mux = $context->get('a',0);
+        $b = $context->get('b',0);
+        $mm = $context->get('mm',0);
+
+        $context->set('int.a',101 * $mux + $b);
+        $context->set('int.b',200 * $mux + $mm);
+
+    }
+}
+
 
 class MainTest extends TestCase
 {
@@ -18,7 +42,8 @@ class MainTest extends TestCase
         $ctx->set(['a' => 1, 'b' => 2, 'c' => 3])
             ->reg('d', '$a + $b')
             ->reg('e', '$a * $b')
-            ->reg('aa', '$a +5');
+            ->reg('aa', '$a +5')
+            ->reg('mm','$c + 2');
         $this->ctx = $ctx;
     }
 
@@ -172,4 +197,43 @@ class MainTest extends TestCase
         $this->getActualOutput();
 
     }
+
+    public function testInteceptorDepends(){
+        $inteceptor = new InteceptorDepends();
+        //int.a = 101*a+b int.b=200*a + mm a=1 b=2
+        $this->ctx->addInterceptor($inteceptor);
+        $this->ctx->reg('dep','$int.a + $b');
+        $this->assertEquals(105 ,$this->ctx->fetch('dep'));
+
+        $this->ctx->rset('a','2');
+        $this->assertEquals(206 ,$this->ctx->fetch('dep'));
+    }
+
+    public function testInteceptorDepends2(){
+        $inteceptor = new InteceptorDepends();
+        //int.a = 101*a+b int.b=200*a + mm
+        $this->ctx->addInterceptor($inteceptor);
+        $this->ctx->reg('dep','$int.a + $b');
+
+        $this->assertEquals(105 ,$this->ctx->fetch('dep'));
+
+        $this->ctx->rset('b','3');
+        $this->assertEquals(107 ,$this->ctx->fetch('dep'));
+    }
+
+    public function testInteceptorDepends3(){
+        $inteceptor = new InteceptorDepends();
+        //int.a = 101*a+b int.b=200*a + mm
+        $this->ctx->addInterceptor($inteceptor);
+        $this->ctx->debug(true);
+
+        $this->ctx->reg('dep','$int.b + $b');
+        $this->ctx->reg('dep2','$int.a + $b');
+
+        $this->assertEquals(207 ,$this->ctx->fetch('dep'));
+
+        $this->ctx->rset('c','13');
+        $this->assertEquals(217,$this->ctx->fetch('dep'));
+    }
+
 }
