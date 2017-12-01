@@ -20,7 +20,7 @@ class InteceptorDepends implements InterceptorInterface{
 
     public function perform($context, $keys, $key)
     {
-        $mux = $context->get('a',0);
+        $mux = $context->fetch('a',0);
         $b = $context->get('b',0);
         $mm = $context->get('mm',0);
 

@@ -356,6 +356,9 @@ class Context
     {
         if ($deep === true) {
             $this->fields = [];
+            foreach($this->interceptors as $inter){
+                $inter->reset();
+            }
         } else {
             $cal = [];
             foreach ($this->fields as $k => $v) {
