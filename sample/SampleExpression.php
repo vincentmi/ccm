@@ -5,9 +5,9 @@ use CCM\Expression;
 
 class SampleExpression extends Expression
 {
-    public function calculate($context,$level)
+    public function calculate($context)
     {
-        if($context->get('base.a',$level+1) == 1){
+        if($context->get('base.a') == 1){
             return 1000;
         }else{
             return 200;

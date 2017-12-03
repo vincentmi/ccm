@@ -52,10 +52,10 @@ class Context
     protected $map = [];
     //调用栈用于进行关联关系和循环调用检查
     protected $callstack = [];
-    protected $callstackLevel = [];
     //用于调试的调用
     protected $_callstack = [];
     protected $_callstackLevel = [];
+    protected $_callstackValue = [];
     /**
      * debug时的全部callstacks
      * @var array
@@ -102,9 +102,27 @@ class Context
      * @return mixed|null
      * @throws Exception
      */
-    public function get($key, $level)
+    public function get($key)
     {
         $key = trim($key);
+
+        if (in_array($key, $this->callstack)) {
+            $text = "Cyclic dependence error occur in resolve '$key'. please check call stack below：\n";
+            $text .= $this->printCallstack();
+            $text .= "\n";
+            throw new CyclicDependenceException($text);
+        }
+
+        $level = count($this->callstack);
+        $pKey = $level > 0 ? $this->callstack[$level - 1] : '';
+
+
+        array_push($this->callstack , $key);
+        $this->_callstack[] = $key;
+        $this->_callstackLevel[] = $level;
+        $this->_callstackValue[] = '$'.$key;
+        $valueIndex = count($this->_callstackValue) -1 ;
+
 
         //interceptor
         $keys = explode('.', $key);
@@ -115,50 +133,12 @@ class Context
         }
 
         if (isset($this->fields[$key])){
-            //依赖常量 将该Key记录为上一层的依赖
-            //不添加到调用栈 避免循环检查
-            $callStackLen = count($this->callstack);
-            if($callStackLen > 0) {
-                $pKey = $this->callstack[$callStackLen-1];
-                $this->depends[$key][$pKey] = $pKey;
-            }
-            if($this->_debug && $callStackLen > 0){
-                array_push($this->_callstack, $key);
-                array_push($this->_callstackLevel, $level-1);
-            }
-            return $this->fields[$key];
-        }
+            $value = $this->fields[$key];
+        }elseif (isset($this->map[$key])) {
 
-
-        if (in_array($key, $this->callstack)) {
-            //循环依赖检查
-            array_push($this->callstack, $key);
-            array_push($this->callstackLevel, $level);
-
-            if($this->_debug ){
-                array_push($this->_callstack, $key);
-                array_push($this->_callstackLevel, $level);
-            }
-
-            $text = "Cyclic dependence error occur in resolve '$key'. please check call stack below：\n";
-            $text .= $this->printCallstack(true);
-            $text .= "\n";
-            throw new CyclicDependenceException($text);
-        }
-        //调用栈PUSH
-        array_push($this->callstack, $key);
-        array_push($this->callstackLevel, $level);
-        if($this->_debug){
-            array_push($this->_callstack, $key);
-            array_push($this->_callstackLevel, $level);
-        }
-
-        if (isset($this->map[$key])) {
-            $dependStart = count($this->callstack);
             $mapped = $this->map[$key];
-
+            $value = 0;
             try {
-
                 $oldErrorHandler = null;
                 if($this->_debug == false){
                     $oldErrorHandler = set_error_handler(function($severity, $message, $file, $line){
@@ -167,10 +147,10 @@ class Context
                 }
 
                 if (is_object($mapped) && is_a($mapped, ExpressionInterface::class)) {
-                    $value = $mapped->calculate($this, $level + 1);
+                    $value = $mapped->calculate($this);
                 } else {
                     if (is_callable($mapped)) {
-                        $value = call_user_func_array($this->map[$key], [$this, $level + 1]);
+                        $value = call_user_func_array($this->map[$key], [$this]);
                     } else {
                         throw new InvalidException('invalid key map' . var_export($mapped, true));
                     }
@@ -180,33 +160,25 @@ class Context
                 }
 
             }catch(\Exception $e){
-                if($this->_debug == false){
-                    return 0;
-                }else{
+                if($this->_debug){
                     throw $e;
                 }
-
             }
-            $subCalls = array_slice($this->callstack, $dependStart); //当前节点依赖的所有底层调用
-
-            /*foreach ($subCalls as $calledKey) {
-                if (!isset($this->depends[$calledKey])) {
-                    $this->depends[$calledKey] = [$key];
-                }else{
-                    $this->depends[$calledKey][$key] = $key;
-                }
-            }*/
-            $this->addDepends($key,$subCalls);
-
-            $this->set($key, $value);
-            return $value;
 
         } else {
             //print_r($this);
             throw new VariableMissingException('variable\'' . $key . '\' missed ');
             //return null;
         }
+        array_pop($this->callstack);
+        if($pKey){
+            $this->addDepends($pKey,$key);//上级依赖当前调用
+        }
+        $this->set($key, $value);
+        $this->_callstackValue[$valueIndex] = $value;
+        return $value;
     }
+
 
     /**
      * 设置 $key 依赖的 底层key,
@@ -215,15 +187,18 @@ class Context
      * @param $subCalls
      * @return $this
      */
-    public function addDepends($key , $subCalls){
-        if(!is_array($subCalls)){
-            $subCalls = [$subCalls];
+    public function addDepends($key , $depends){
+        if($key == ''){
+            return ;
         }
-        foreach($subCalls as $calledKey){
-            if (!isset($this->depends[$calledKey])) {
-                $this->depends[$calledKey] = [$key];
+        if(!is_array($depends)){
+            $depends = [$depends];
+        }
+        foreach($depends as $depend){
+            if (!isset($this->depends[$depend])) {
+                $this->depends[$depend] = [$key=>$key];
             }else{
-                $this->depends[$calledKey][$key] = $key;
+                $this->depends[$depend][$key] = $key;
             }
         }
         return $this;
@@ -232,8 +207,10 @@ class Context
     public function printCallstack($return = false)
     {
         $text = '';
-        foreach ($this->callstack as $index => $item) {
-            $text .= "|-" . str_repeat('--', $this->callstackLevel[$index]) . $item . "\n";
+        foreach ($this->_callstack as $index => $item) {
+            $data = isset($this->_callstackValue[$index]) ? $this->_callstackValue[$index] : '?';
+            $data = is_scalar($data) ? strval($data) : json_encode($data,JSON_UNESCAPED_UNICODE);
+            $text .=  str_repeat('  ', $this->_callstackLevel[$index]) .'|-'. $item . ' ('.$data.')'."\n";
         }
         $text .= "\n";
 
@@ -298,7 +275,7 @@ class Context
 
     public function getCallstack()
     {
-        return $this->callstack;
+        return $this->_callstack;
     }
 
     public function getDepends($key = null)
@@ -391,8 +368,8 @@ class Context
             $this->rsetCount = 0;
             $this->clearDepends($key);
             $this->set($key, $value);
-        }
 
+        }
         return $this;
     }
 
@@ -406,15 +383,10 @@ class Context
         if (isset($this->depends[$key])) {
             foreach ($this->depends[$key] as $child) {
                 unset($this->fields[$child]);
-                if($this->_debug){
-                    unset($this->_calls[$child]);
-                }
-                $this->rsetCount++;
-                //echo 'unset '.$child."\n";
+                //echo 'unset- '.$child."\n";
                 $this->clearDepends($child);
             }
         }
-        return $this;
     }
 
     /**
@@ -461,42 +433,29 @@ class Context
     public function fetch($key)
     {
         $this->callstack = [];
-        $this->callstackLevel =[];
         $this->_callstack = [];
         $this->_callstackLevel = [];
+        $this->_callstackValue = [];
 
-        $result= $this->get($key, 0);
+        $result= $this->get($key);
         if($this->_debug){
-            $callStack = $this->_callstack;
-            $callStackLevel = $this->_callstackLevel;
-            if(!isset($this->_calls[$key])){
-                $calls = [];
-                foreach($callStack as $index=>$call){
-                    $calls[] = [
-                        'key'=>$call ,
-                        'level'=>$callStackLevel[$index],
-                        'data'=>$this->fetch($call)
-                    ];
-                }
-                $this->_calls[$key] =$calls;
+            $calls = [];
+            foreach($this->_callstack as $index=>$call)
+            {
+                $calls[] = [
+                    'key'=>$call,
+                    'level'=>$this->_callstackLevel[$index],
+                    'data'=>$this->_callstackValue[$index]
+                ];
             }
+            $this->_calls[$key] = $calls;
         }
         return $result;
     }
 
     public function getCalls($key = null)
     {
-        if($this->_debug){
-            if($key == null){
-                return $this->_calls;
-            }elseif(isset($this->_calls[$key])){
-                return $this->_calls[$key];
-            }else{
-                return [];
-            }
-        }else{
-            return [];
-        }
+        return isset($this->_calls[$key])? $this->_calls[$key] : [];
     }
 
     public function printCalls($key = null,$return = false){
