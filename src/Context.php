@@ -77,7 +77,16 @@ class Context
         return $this;
     }
 
-    public function gets($keys, $level, $replaceDot = false)
+    /**
+     * 检查是否已经换成指定的key
+     * @param $key
+     * @return bool
+     */
+    public function hasField($key){
+        return isset($this->fields[$key]);
+    }
+
+    public function gets($keys,$replaceDot = false)
     {
         if (!is_array($keys)) {
             $keys = explode(',', $keys);
@@ -89,7 +98,19 @@ class Context
             } else {
                 $k = $key;
             }
-            $data[$k] = $this->get($key, $level);
+            $data[$k] = $this->get($key);
+        }
+        return $data;
+    }
+
+    public function get($key){
+        if(is_array($key)){
+            $data = [];
+            foreach($key as  $k){
+                $data[$k] = $this->_get($k);
+            }
+        }else{
+          $data = $this->_get($key);
         }
         return $data;
     }
@@ -102,7 +123,7 @@ class Context
      * @return mixed|null
      * @throws Exception
      */
-    public function get($key)
+    private  function _get($key)
     {
         $key = trim($key);
 
@@ -425,13 +446,7 @@ class Context
         }
     }
 
-    /**
-     * 清除调用堆栈，并获取运算结果
-     * @param $key
-     * @return mixed|null
-     */
-    public function fetch($key)
-    {
+    private function _fetch($key){
         $this->callstack = [];
         $this->_callstack = [];
         $this->_callstackLevel = [];
@@ -453,6 +468,31 @@ class Context
         return $result;
     }
 
+    /**
+     * 清除调用堆栈，并获取运算结果
+     * 如果key是数组则获取一组结果
+     * @param $key string|array
+     * @return mixed|null
+     */
+    public function fetch($key)
+    {
+        if(is_array($key)){
+            $data = [];
+            foreach($key as  $k){
+                $data[$k] = $this->_fetch($k);
+            }
+        }else{
+          $data = $this->_fetch($key);
+        }
+        return $data;
+
+    }
+
+    /**
+     * 获取第一次的调用堆栈调用堆栈
+     * @param null $key
+     * @return array|mixed
+     */
     public function getCalls($key = null)
     {
         return isset($this->_calls[$key])? $this->_calls[$key] : [];
@@ -478,7 +518,8 @@ class Context
     }
 
     /**
-     * 获取一组数据
+     * 获取一组数据,只能获取reg或者set的数据
+     * 拦截器载入的数据无法进行自动载入 请使用get或者fetch获取
      * @param $prefix
      * @return array
      */
@@ -506,7 +547,7 @@ class Context
                 //$fetched[$key] = 1;
                 $subKey = substr($key,$len+1);
                 if($subKey!=''){
-                    $data[$subKey] = $this->fetch($key);
+                    $data[$subKey] = $this->_fetch($key);
                 }
 
             }

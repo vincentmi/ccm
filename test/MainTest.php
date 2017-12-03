@@ -8,31 +8,6 @@ use CCM\InterceptorInterface;
 use CCM\VariableMissingException;
 use PHPUnit\Framework\TestCase;
 
-class InteceptorDepends implements InterceptorInterface{
-    public function match($context, $keys)
-    {
-        if($keys[0] == 'int'){
-            return true;
-        }else{
-            return false;
-        }
-    }
-
-    public function reset(){
-
-    }
-
-    public function perform($context, $keys, $key)
-    {
-        $mux = $context->get('a',0);
-        $b = $context->get('b',0);
-        $mm = $context->get('mm',0);
-
-        $context->set('int.a',101 * $mux + $b);
-        $context->set('int.b',200 * $mux + $mm);
-
-    }
-}
 
 
 class MainTest extends TestCase
@@ -206,7 +181,7 @@ class MainTest extends TestCase
     }
 
     public function testInteceptorDepends(){
-        $inteceptor = new InteceptorDepends();
+        $inteceptor = new InterceptorDepends();
         //int.a = 101*a+b int.b=200*a + mm a=1 b=2
         $this->ctx->addInterceptor($inteceptor);
         $this->ctx->reg('dep','$int.a + $b');
@@ -217,7 +192,7 @@ class MainTest extends TestCase
     }
 
     public function testInteceptorDepends2(){
-        $inteceptor = new InteceptorDepends();
+        $inteceptor = new InterceptorDepends();
         //int.a = 101*a+b int.b=200*a + mm
         $this->ctx->addInterceptor($inteceptor);
         $this->ctx->reg('dep','$int.a + $b');
@@ -229,7 +204,7 @@ class MainTest extends TestCase
     }
 
     public function testInteceptorDepends3(){
-        $inteceptor = new InteceptorDepends();
+        $inteceptor = new InterceptorDepends();
         //int.a = 101*a+b int.b=200*a + mm
         $this->ctx->addInterceptor($inteceptor);
         $this->ctx->debug(true);
@@ -241,6 +216,36 @@ class MainTest extends TestCase
 
         $this->ctx->rset('c','13');
         $this->assertEquals(217,$this->ctx->fetch('dep'));
+    }
+
+
+    public function testInteceptorDep4(){
+        $this->ctx->addInterceptor(new InterceptorWithDepends());
+        $this->ctx->debug(true);
+        $this->ctx->reg('ra' , '$int.a + 100000');
+        $this->ctx->reg('rb' , '$int.b + 100000');
+        $this->assertEquals(100010  ,$this->ctx->fetch('ra'));
+        $this->assertEquals(100200  ,$this->ctx->fetch('rb'));
+        $this->assertTrue($this->ctx->hasField('rb'));
+        $this->ctx->rset('a',5);
+        $this->assertFalse($this->ctx->hasField('ra'));
+        $this->assertTrue($this->ctx->hasField('rb'));
+
+        $this->assertEquals(100050  ,$this->ctx->fetch('ra'));
+        $this->assertEquals(100200  ,$this->ctx->fetch('rb'));
+        $this->assertTrue($this->ctx->hasField('ra'));
+        $this->assertTrue($this->ctx->hasField('rb'));
+
+    }
+
+
+    public function testFetchMultiKeys(){
+        $this->ctx->addInterceptor(new InterceptorDepends());
+        $this->assertArraySubset(['a'=>1 , 'b'=>2 , 'd'=>3] , $this->ctx->fetch(['a','b','d']));
+        $this->assertArraySubset(['a'=>1 , 'b'=>2 , 'd'=>3] , $this->ctx->get(['a','b','d']));
+        $this->assertEquals(6 , $this->ctx->get('aa'));
+        $this->ctx->set([ 'x.a'=>5 , 'x.b'=>6 , 'x.b.a'=>8]);
+        $this->assertEquals(['a'=>5 , 'b'=>6 , 'b.a'=>8] , $this->ctx->fetchAll('x'  ,true));
     }
 
 

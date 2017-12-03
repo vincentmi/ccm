@@ -17,7 +17,6 @@ blog: http://vnzmi.com
 但是只有需要时才会运行相关的公式。
 - 如果某一运算涉及的公式非常多 ```rset()```因为会检查变量的依赖会导致进行依赖检查耗费太多时间，建议
 使用```reset()```重置后再进行运算。
-- **特别注意,字符串形式的公式表达式和变量之间必须要有空格,例如: ```$a+$b``` 需要些成 ```$a + $b```**
 
 ## 使用
 
@@ -90,7 +89,7 @@ $ctx = new \CCM\Context();
 echo
 $ctx->reg('temperature_rate' ,function($context,$level){
 
-    $todayTemp = $context->get('todayTemp' , $level+1) ; // $todayTemp = fget('http://cnweathor.com/getToday')
+    $todayTemp = $context->get('todayTemp') ; // $todayTemp = fget('http://cnweathor.com/getToday')
     if($todayTemp > 30){
         return 0.2;
     }else if($todayTemp > 40){
@@ -101,9 +100,9 @@ $ctx->reg('temperature_rate' ,function($context,$level){
         return 0;
     }
 } )
-    ->reg('workload_rate',function($context , $level){
-        $workload = $context->get('workload',$level+1);
-        $totalCheckin = $context->get('totalCheckin',$level+1);
+    ->reg('workload_rate',function($context){
+        $workload = $context->get('workload');
+        $totalCheckin = $context->get('totalCheckin');
         $workloadRate = $workload/$totalCheckin;
         if( $workloadRate < 1){
             return 0.3;
