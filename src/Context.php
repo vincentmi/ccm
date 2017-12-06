@@ -63,6 +63,10 @@ class Context
     protected $_calls = [];
     protected $metas = [];
     protected $interceptors = [];
+    /**
+     *   parent=>[childs]
+     * @var array
+     */
     protected $depends = [];
 
     /**
@@ -71,7 +75,12 @@ class Context
      */
     protected $_debug = false;
 
-
+    /**
+     * 如果打开 debug可以使用 getCalls(key)获取最近一次fetch的执行过程
+     * 如果不开启debug可以使用 printDependTree(key)获取key的依赖关系
+     * @param bool $debug
+     * @return $this
+     */
     public function debug($debug = true){
         $this->_debug = $debug;
         return $this;
@@ -110,7 +119,7 @@ class Context
                 $data[$k] = $this->_get($k);
             }
         }else{
-          $data = $this->_get($key);
+            $data = $this->_get($key);
         }
         return $data;
     }
@@ -137,59 +146,64 @@ class Context
         $level = count($this->callstack);
         $pKey = $level > 0 ? $this->callstack[$level - 1] : '';
 
-
         array_push($this->callstack , $key);
         $this->_callstack[] = $key;
         $this->_callstackLevel[] = $level;
         $this->_callstackValue[] = '$'.$key;
         $valueIndex = count($this->_callstackValue) -1 ;
 
-
-        //interceptor
-        $keys = explode('.', $key);
-        foreach ($this->interceptors as $interceptor) {
-            if ($interceptor->match($this, $keys)) {
-                $interceptor->perform($this, $keys, $key);
-            }
-        }
-
         if (isset($this->fields[$key])){
             $value = $this->fields[$key];
-        }elseif (isset($this->map[$key])) {
-
-            $mapped = $this->map[$key];
-            $value = 0;
-            try {
-                $oldErrorHandler = null;
-                if($this->_debug == false){
-                    $oldErrorHandler = set_error_handler(function($severity, $message, $file, $line){
-                        throw new \ErrorException($message, 0, $severity, $file, $line);
-                    });
-                }
-
-                if (is_object($mapped) && is_a($mapped, ExpressionInterface::class)) {
-                    $value = $mapped->calculate($this);
-                } else {
-                    if (is_callable($mapped)) {
-                        $value = call_user_func_array($this->map[$key], [$this]);
-                    } else {
-                        throw new InvalidException('invalid key map' . var_export($mapped, true));
-                    }
-                }
-                if($oldErrorHandler){
-                    set_error_handler($oldErrorHandler);
-                }
-
-            }catch(\Exception $e){
-                if($this->_debug){
-                    throw $e;
+        }else {
+            //interceptor
+            $matched = false;
+            $keys = explode('.', $key);
+            foreach ($this->interceptors as $interceptor) {
+                if ($interceptor->match($this, $keys)) {
+                    $interceptor->perform($this, $keys, $key);
+                    $matched = true;
                 }
             }
+            if ($matched == true && isset($this->fields[$key])) {
+                $value = $this->fields[$key];
+                //loaded by interceptor
+            } else {
+                if (isset($this->map[$key])) {
+                    $mapped = $this->map[$key];
+                    $value = 0;
+                    try {
+                        $oldErrorHandler = null;
+                        if ($this->_debug == false) {
+                            $oldErrorHandler = set_error_handler(function ($severity, $message, $file, $line) {
+                                throw new \ErrorException($message, 0, $severity, $file, $line);
+                            });
+                        }
 
-        } else {
-            //print_r($this);
-            throw new VariableMissingException('variable\'' . $key . '\' missed ');
-            //return null;
+                        if (is_object($mapped) && is_a($mapped, ExpressionInterface::class)) {
+                            $value = $mapped->calculate($this);
+                        } else {
+                            if (is_callable($mapped)) {
+                                $value = call_user_func_array($this->map[$key], [$this]);
+                            } else {
+                                throw new InvalidException('invalid key map' . var_export($mapped, true));
+                            }
+                        }
+                        if ($oldErrorHandler) {
+                            set_error_handler($oldErrorHandler);
+                        }
+
+                    } catch (\Exception $e) {
+                        if ($this->_debug) {
+                            throw $e;
+                        }
+                    }
+
+                } else {
+                    //print_r($this);
+                    throw new VariableMissingException('variable\'' . $key . '\' missed ');
+                    //return null;
+                }
+            }
         }
         array_pop($this->callstack);
         if($pKey){
@@ -199,6 +213,50 @@ class Context
         $this->_callstackValue[$valueIndex] = $value;
         return $value;
     }
+
+    public function getDependTree($key)
+    {
+        $ctx = clone $this;
+        $data = [
+            ['key'=>$key,'level'=>0 ,'data'=>$ctx->fetch($key)]
+        ];
+        $this->_getDependTree($data , $key,1,$ctx);
+        return $data;
+    }
+
+    private function _getDependTree(&$result, $key , $level=0 ,$ctx)
+    {
+        $parents = [];
+        foreach($this->depends as $parent=> $child)
+        {
+            if(isset($child[$key]))
+            {
+                $parents[] = $parent;
+                $result[] =['key'=>$parent , 'level'=>$level ,'data'=>$ctx->fetch($parent)];
+                $this->_getDependTree($result , $parent,$level+1 , $ctx);
+            }
+        }
+    }
+
+
+    public function printDependTree($key,$return = false)
+    {
+        $tree = $this->getDependTree($key);
+        $text = '';
+        foreach ($tree as $index => $item) {
+            $data = isset($item['data']) ? $item['data'] : '?';
+            $data = is_scalar($data) ? strval($data) : json_encode($data,JSON_UNESCAPED_UNICODE);
+            $text .=  str_repeat('  ', $item['level']) .'|-'. $item['key'] . '='.$data."\n";
+        }
+        $text .= "\n";
+
+        if ($return == true) {
+            return $text;
+        } else {
+            echo $text;
+        }
+    }
+
 
 
     /**
@@ -395,7 +453,7 @@ class Context
     }
 
     /**
-     * 清楚依赖
+     * 清除依赖
      * @param $key
      * @return  $this
      */
@@ -482,7 +540,7 @@ class Context
                 $data[$k] = $this->_fetch($k);
             }
         }else{
-          $data = $this->_fetch($key);
+            $data = $this->_fetch($key);
         }
         return $data;
 
@@ -500,7 +558,7 @@ class Context
 
     public function printCalls($key = null,$return = false){
         $calls = $this->getCalls($key);
-        $text = "\n";
+        $text = "";
         foreach($calls as $call){
             if(is_array($call['data']) || is_object($call['data'])){
                 $data = json_encode($call['data'],JSON_UNESCAPED_UNICODE);
@@ -508,7 +566,7 @@ class Context
                 $data = $call['data'];
             }
             $repeatStr = $call['level'] > 0 ? str_repeat('--', $call['level']) : '';
-                $text .= "|-" . $repeatStr . $call['key'] .'='.$data. "\n";
+            $text .= "|-" . $repeatStr . $call['key'] .'='.$data. "\n";
         }
         if($return){
             return $text;

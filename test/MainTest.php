@@ -249,4 +249,30 @@ class MainTest extends TestCase
     }
 
 
+    public function testPrintDependTree(){
+        $this->ctx->reg('tree','$d + $e + $aa');
+        $mmDepends = [
+            ['key'=>'mm' ,'level'=>0 ,'data'=>5],
+            ['key'=>'c' ,'level'=>1 ,'data'=>3]
+        ];
+        $this->ctx->fetch('mm');
+        $this->assertEquals($mmDepends ,$this->ctx->getDependTree('mm'));
+
+        $treeDepends = [
+            ['key'=>'tree','level'=>0 , 'data'=>11],
+            ['key'=>'d' ,'level'=>1 ,'data'=>3],
+            ['key'=>'a' ,'level'=>2 ,'data'=>1],
+            ['key'=>'b' ,'level'=>2 ,'data'=>2],
+            ['key'=>'e' ,'level'=>1 ,'data'=>2],
+            ['key'=>'a' ,'level'=>2 ,'data'=>1],
+            ['key'=>'b' ,'level'=>2 ,'data'=>2],
+            ['key'=>'aa' ,'level'=>1 ,'data'=>6],
+            ['key'=>'a' ,'level'=>2 ,'data'=>1]
+        ];
+        $this->ctx->fetch('tree');
+        $this->assertEquals($treeDepends ,$this->ctx->getDependTree('tree'));
+
+    }
+
+
 }
