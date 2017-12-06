@@ -43,10 +43,6 @@ class KeyOccupiedException extends CCMException
 
 class Context
 {
-
-    public $prefix = 'cal.';
-
-    public $prefixLength = 4;
     public $rsetCount = 0;
     protected $fields = [];
     protected $map = [];
@@ -112,14 +108,15 @@ class Context
         return $data;
     }
 
-    public function get($key){
+    public function get($key,$default=null){
         if(is_array($key)){
             $data = [];
             foreach($key as  $k){
-                $data[$k] = $this->_get($k);
+                $def  = is_array($default) && isset($default[$k])? $default[$k] : null;
+                $data[$k] = $this->_get($k,$def);
             }
         }else{
-            $data = $this->_get($key);
+            $data = $this->_get($key,$default);
         }
         return $data;
     }
@@ -132,7 +129,7 @@ class Context
      * @return mixed|null
      * @throws Exception
      */
-    private  function _get($key)
+    private  function _get($key, $default = null)
     {
         $key = trim($key);
 
@@ -200,7 +197,13 @@ class Context
 
                 } else {
                     //print_r($this);
-                    throw new VariableMissingException('variable\'' . $key . '\' missed ');
+                    if($default === null){
+                        throw new VariableMissingException('variable\'' . $key . '\' missed ');
+                    }else{
+                        return $default;
+                        //use default value no cache
+                    }
+
                     //return null;
                 }
             }
@@ -404,29 +407,50 @@ class Context
     }
 
     /**
-     * 重置context以及置顶前缀的运算结果
-     * @param bool $deep
+     * 如果key重置context
+     * 或者置顶前缀的运算结果
+     * @param bool $key 要重置的 key的前缀
      * @return array
      */
-    public function reset($deep = false)
+    public function reset()
     {
-        if ($deep === true) {
-            $this->fields = [];
-            foreach($this->interceptors as $inter){
-                $inter->reset();
-            }
-        } else {
-            $cal = [];
-            foreach ($this->fields as $k => $v) {
-                $prefix = substr($k, 0, $this->prefixLength);
-                if ($prefix == $this->prefix) {
-                    $cal[$k] = $v;
-                    unset($this->fields[$k]);
-                }
+       $this->fields = [];
+       foreach($this->interceptors as $inter){
+            $inter->reset();
+       }
+       $this->callstack = [];
+       $this->depends = [];
+        return $this;
+    }
+
+    public function fieldGet($key){
+        return isset($this->fields[$key])? $this->fields[$key] : null;
+    }
+
+    public function fieldSet($key,$value){
+        $this->set($key,$value);
+        return $this;
+    }
+
+    public function fieldRemove($key){
+        unset($this->fields[$key]);
+        return $this;
+    }
+
+    /**
+     * 移除缓存中的字段
+     * @param $keyPrefix
+     * @return $this
+     */
+    public function fieldClear($keyPrefix)
+    {
+        $len = strlen($keyPrefix);
+        foreach ($this->fields as $k => $v) {
+            $prefix = substr($k, 0, $len);
+            if ($prefix == $keyPrefix) {
+                unset($this->fields[$k]);
             }
         }
-        $this->callstack = [];
-        $this->depends = [];
         return $this;
     }
 
@@ -473,14 +497,14 @@ class Context
      * @param $keys
      * @return array
      */
-    public function fetchs($keys)
+    public function fetchs($keys , $valueOnly=true)
     {
         if (!is_array($keys)) {
             $keys = [$keys];
         }
         $data = [];
         foreach ($keys as $key) {
-            $data[$key] = [
+            $data[$key] = $valueOnly ?  $this->fetch($key) : [
                 'label' => $this->label($key),
                 'value' => $this->fetch($key),
                 'meta' => $this->meta($key)
@@ -504,13 +528,13 @@ class Context
         }
     }
 
-    private function _fetch($key){
+    private function _fetch($key,$default = null){
         $this->callstack = [];
         $this->_callstack = [];
         $this->_callstackLevel = [];
         $this->_callstackValue = [];
 
-        $result= $this->get($key);
+        $result= $this->get($key,$default);
         if($this->_debug){
             $calls = [];
             foreach($this->_callstack as $index=>$call)
@@ -532,15 +556,16 @@ class Context
      * @param $key string|array
      * @return mixed|null
      */
-    public function fetch($key)
+    public function fetch($key,$default = null)
     {
         if(is_array($key)){
             $data = [];
             foreach($key as  $k){
-                $data[$k] = $this->_fetch($k);
+                $def  = is_array($default) && isset($default[$k])? $default[$k] : null;
+                $data[$k] = $this->_fetch($k,$def);
             }
         }else{
-            $data = $this->_fetch($key);
+            $data = $this->_fetch($key,$default);
         }
         return $data;
 
@@ -611,6 +636,38 @@ class Context
             }
         }
         return $data;
+    }
+
+    /**
+     * 按前缀获取为数组
+     * @param $prefix
+     * @return array
+     */
+    public function fetchArray($prefix)
+    {
+        $data = $this->fetchAll($prefix);
+        $result = [];
+        foreach($data as $key=>$value)
+        {
+            if($key =='') continue;
+
+            $keys = explode('.',$key);
+            $keyStr = '';
+            for($i = 0,$count = count($keys);$i<$count;$i++)
+            {
+                $k1 = $keys[$i];
+                $keyStr .= '[\''.$k1.'\']';
+                if($i == $count -1 ){
+                    eval('$result'.$keyStr.'= $value;');
+                }else{
+                    $isset = eval('return isset($result'.$keyStr.') && is_array($result'.$keyStr.');');
+                    if(!$isset){
+                        eval('$result'.$keyStr.' = [];');
+                    }
+                }
+            }
+        }
+        return $result;
     }
 
     /**

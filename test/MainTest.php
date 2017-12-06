@@ -274,5 +274,45 @@ class MainTest extends TestCase
 
     }
 
+    /**
+     * @expectedException CCM\VariableMissingException
+     */
+    public function testReset(){
+        $this->ctx->set('a.a','11');
+        $this->assertEquals(11,$this->ctx->fetch('a.a'));
+        $this->ctx->reset();
+        $this->assertEquals(null,$this->ctx->fetch('a.a'));
+    }
+
+
+    public function testFieldGet(){
+        $this->ctx->set('a.a','11');
+        $this->ctx->set('a.b','11');
+        $this->ctx->fieldSet('a.c','11');
+        $this->ctx->set('b.a','11');
+        $this->ctx->set('b.c.d','11');
+        $this->ctx->set('b.c.e','11');
+        $this->ctx->set('b.c.m.f','11');
+
+        $fetchArrayC = [
+            'd'=>11,'e'=>11,
+            'm'=>['f'=>11]
+        ];
+
+        $fetchArrayB = [
+            'a'=>11,
+            'c'=>$fetchArrayC
+        ];
+
+        $this->assertEquals($fetchArrayB , $this->ctx->fetchArray('b'));
+        $this->assertEquals($fetchArrayC , $this->ctx->fetchArray('b.c'));
+        $this->assertEquals(['a.a'=>11 ,'a.b'=>11,'a.c'=>11] ,
+            $this->ctx->fetchs(['a.a','a.b','a.c']));
+        $this->ctx->fieldClear('a');
+        $this->assertEquals('' ,
+            $this->ctx->fetch('a.a',''));
+
+    }
+
 
 }
