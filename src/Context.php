@@ -423,8 +423,22 @@ class Context
         return $this;
     }
 
+    public function keyExist($key)
+    {
+        if($this->fieldExist($key))
+        {
+            return  true;
+        }else{
+            return isset($this->map[$key]);
+        }
+    }
+
     public function fieldGet($key){
-        return isset($this->fields[$key])? $this->fields[$key] : null;
+        return $this->fieldExist($key)? $this->fields[$key] : null;
+    }
+
+    public function fieldExist($key){
+        return isset($this->fields[$key]);
     }
 
     public function fieldSet($key,$value){

@@ -314,5 +314,13 @@ class MainTest extends TestCase
 
     }
 
+    public function testExist(){
+        $this->assertTrue($this->ctx->fieldExist('a'));
+        $this->assertTrue($this->ctx->fieldExist('b'));
+        $this->assertTrue($this->ctx->fieldExist('c'));
+        $this->assertTrue($this->ctx->keyExist('mm'));
+        $this->assertFalse($this->ctx->fieldExist('mm'));
+    }
+
 
 }
