@@ -555,8 +555,8 @@ class Context
             {
                 $calls[] = [
                     'key'=>$call,
-                    'level'=>$this->_callstackLevel[$index],
-                    'data'=>$this->_callstackValue[$index]
+                    'level'=>isset($this->_callstackLevel[$index]) ? $this->_callstackLevel[$index]:0,
+                    'data'=>isset($this->_callstackValue[$index]) ? $this->_callstackValue[$index]:''
                 ];
             }
             $this->_calls[$key] = $calls;
