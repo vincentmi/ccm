@@ -49,6 +49,8 @@ class Expression implements ExpressionInterface
                 $value = $context->get($ex);
                 if(is_array($value)){
                     $value = '('.var_export($value,true) . ')';
+                }else if(is_null($value)){
+                    $value = 0;
                 }
                 $label = $context->label($ex);
                 $replacePar[$expressKey] = $value;

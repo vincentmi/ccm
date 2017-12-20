@@ -151,6 +151,9 @@ class Context
 
         if (isset($this->fields[$key])){
             $value = $this->fields[$key];
+            if($value === 'nil'){
+                $value = null ;
+            }
         }else {
             //interceptor
             $matched = false;
@@ -207,12 +210,12 @@ class Context
                     //return null;
                 }
             }
+            $this->set($key, $value);
         }
         array_pop($this->callstack);
         if($pKey){
             $this->addDepends($pKey,$key);//上级依赖当前调用
         }
-        $this->set($key, $value);
         $this->_callstackValue[$valueIndex] = $value;
         return $value;
     }
@@ -315,9 +318,15 @@ class Context
     {
         if (is_array($key)) {
             foreach ($key as $k => $v) {
+                if($v === null){
+                    $v = 'nil';
+                }
                 $this->fields[$k] = $v;
             }
         } else {
+            if($value === null){
+                $value = 'nil';
+            }
             $this->fields[$key] = $value;
         }
 

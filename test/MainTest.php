@@ -334,5 +334,15 @@ class MainTest extends TestCase
         $this->assertEquals(100,$this->ctx->fetch('arr.m.m'));
     }
 
+    public function testIsNUll(){
+        $this->ctx->set('null' , null);
+        $this->ctx->reg('nullexp' , '$null * 100');
+        $this->assertNull($this->ctx->fetch('null'));
+        $this->assertTrue($this->ctx->fieldExist('null'));
+        $this->assertEquals( 0 , null/100);
+        $this->assertEquals( 0 , null*100);
+        $this->assertEquals( 0 , $this->ctx->fetch('nullexp'));
+    }
+
 
 }
