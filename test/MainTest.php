@@ -322,5 +322,17 @@ class MainTest extends TestCase
         $this->assertFalse($this->ctx->fieldExist('mm'));
     }
 
+    public function testExpressionArraySupport(){
+        $this->ctx->reg('arr',function($ctx){
+            return ['m'=>5,'i'=>10,'k'=>[ 'm'=>100]];
+        });
+
+        $this->ctx->reg('arr.m','$arr["m"]');
+        $this->ctx->reg('arr.m.m','$arr["k"]["m"]');
+
+        $this->assertEquals(5 ,$this->ctx->fetch('arr.m'));
+        $this->assertEquals(100,$this->ctx->fetch('arr.m.m'));
+    }
+
 
 }

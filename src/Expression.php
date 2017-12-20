@@ -47,6 +47,9 @@ class Expression implements ExpressionInterface
             }
             foreach ($replaceExpression as $expressKey => $ex) {
                 $value = $context->get($ex);
+                if(is_array($value)){
+                    $value = '('.var_export($value,true) . ')';
+                }
                 $label = $context->label($ex);
                 $replacePar[$expressKey] = $value;
                 $replaceParText[$expressKey] = $label;
