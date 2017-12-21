@@ -197,6 +197,7 @@ class Context
                             throw $e;
                         }
                     }
+                    $this->set($key, $value);
 
                 } else {
                     //print_r($this);
@@ -210,7 +211,6 @@ class Context
                     //return null;
                 }
             }
-            $this->set($key, $value);
         }
         array_pop($this->callstack);
         if($pKey){
