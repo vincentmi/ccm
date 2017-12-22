@@ -135,7 +135,7 @@ class Context
 
         if (in_array($key, $this->callstack)) {
             $text = "Cyclic dependence error occur in resolve '$key'. please check call stack below：\n";
-            $text .= $this->printCallstack();
+            $text .= $this->printCallstack(true);
             $text .= "\n";
             throw new CyclicDependenceException($text);
         }
