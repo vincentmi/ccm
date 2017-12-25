@@ -211,11 +211,15 @@ class Context
                     //return null;
                 }
             }
+            if($value === 'nil'){
+                $value = null ;
+            }
         }
         array_pop($this->callstack);
         if($pKey){
             $this->addDepends($pKey,$key);//上级依赖当前调用
         }
+
         $this->_callstackValue[$valueIndex] = $value;
         return $value;
     }
