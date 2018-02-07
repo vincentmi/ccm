@@ -4,7 +4,11 @@ namespace CCM\Laravel;
 
 use Illuminate\Support\ServiceProvider AS LaravelServiceProvider;
 
-
+/**
+ * Class ServiceProvider
+ * @codeCoverageIgnore
+ * @package CCM\Laravel
+ */
 class ServiceProvider extends LaravelServiceProvider
 {
     /**

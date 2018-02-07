@@ -4,6 +4,7 @@ namespace Test;
 
 use CCM\Context;
 use CCM\CyclicDependenceException;
+use CCM\Expression;
 use CCM\InterceptorInterface;
 use CCM\VariableMissingException;
 use PHPUnit\Framework\TestCase;
@@ -342,6 +343,12 @@ class MainTest extends TestCase
         $this->assertEquals( 0 , null/100);
         $this->assertEquals( 0 , null*100);
         $this->assertEquals( 0 , $this->ctx->fetch('nullexp'));
+    }
+
+    public function testExpression(){
+        $exp = new Expression('1+1');
+        $this->assertEquals($exp->getKey(),'CCM\\Expression');
+        $this->assertEquals($exp->getMeta(),[ 'label'=>'CCM\\Expression']);
     }
 
 

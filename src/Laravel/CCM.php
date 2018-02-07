@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Facade AS LaravelFacade;
 
 /**
  * @see CCM\Context
+ * @codeCoverageIgnore
  */
 class CCM extends LaravelFacade
 {

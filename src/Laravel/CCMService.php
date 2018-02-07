@@ -6,6 +6,11 @@ namespace CCM\Laravel;
 
 use CCM\Context;
 
+/**
+ * Class CCMService
+ * @codeCoverageIgnore
+ * @package CCM\Laravel
+ */
 class CCMService extends Context
 {
     private $app ;
